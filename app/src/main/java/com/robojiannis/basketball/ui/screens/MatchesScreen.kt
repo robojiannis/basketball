@@ -1,5 +1,6 @@
 package com.robojiannis.basketball.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
@@ -16,6 +18,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -172,44 +177,85 @@ fun MatchCard(match: Match, onClick: () -> Unit, onDelete: () -> Unit) {
     val dateString = remember(match.date) { dateFormat.format(Date(match.date)) }
     val quartersPlayed = match.quarters.count { it.isPlaying }
     val totalQuarters = match.quarters.size
-    var showQuarterScores by remember { mutableStateOf(false) }
+    var showMatchDetails by remember { mutableStateOf(false) }
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
-    if (showQuarterScores) {
+    if (showMatchDetails) {
         AlertDialog(
-            onDismissRequest = { showQuarterScores = false },
+            onDismissRequest = { showMatchDetails = false },
             containerColor = CardBackground,
             title = {
-                Text(
-                    text = "Quarter Scores",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Match Details",
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = {
+                        val scoreText = buildString {
+                            append("${match.homeName.uppercase()} vs ${match.awayName.uppercase()}\n")
+                            match.quarters.forEach { quarter ->
+                                append("Q${quarter.quarterNumber}: ${quarter.homeScore} - ${quarter.awayScore}\n")
+                            }
+                            append("TOTAL: ${match.homeScore} - ${match.awayScore}")
+                        }
+                        clipboardManager.setText(AnnotatedString(scoreText))
+                        Toast.makeText(context, "Scores copied to clipboard", Toast.LENGTH_SHORT).show()
+                    }) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = "Copy Scores",
+                            tint = OrangePrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Quarter", color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                        Text(match.homeName.uppercase(), color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                        Text(match.awayName.uppercase(), color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    }
-                    HorizontalDivider(color = BorderColor, thickness = 0.5.dp)
-                    match.quarters.forEach { quarter ->
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Q${quarter.quarterNumber}", color = TextPrimary, modifier = Modifier.weight(1f))
-                            Text("${quarter.homeScore}", color = OrangePrimary, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                            Text("${quarter.awayScore}", color = TextPrimary, modifier = Modifier.weight(1f))
+                            Text("QUARTER", color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                            Text(match.homeName.uppercase(), color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                            Text(match.awayName.uppercase(), color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                        }
+                        HorizontalDivider(color = BorderColor, thickness = 0.5.dp)
+                        match.quarters.forEach { quarter ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Q${quarter.quarterNumber}", color = TextPrimary, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                                Text("${quarter.homeScore}", color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                                Text("${quarter.awayScore}", color = TextPrimary, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                            }
+                        }
+                        HorizontalDivider(color = BorderColor, thickness = 0.5.dp)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("TOTAL", color = TextSecondary, fontWeight = FontWeight.Black, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                            Text("${match.homeScore}", color = OrangePrimary, fontWeight = FontWeight.Black, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                            Text("${match.awayScore}", color = TextPrimary, fontWeight = FontWeight.Black, fontSize = 14.sp, modifier = Modifier.weight(1f))
                         }
                     }
-                    HorizontalDivider(color = BorderColor, thickness = 0.5.dp)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("TOTAL", color = TextSecondary, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
-                        Text("${match.homeScore}", color = OrangePrimary, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
-                        Text("${match.awayScore}", color = TextPrimary, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("PLAYER STATS", color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                        HorizontalDivider(color = BorderColor, thickness = 0.5.dp)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            StatMini("PTS", match.points)
+                            StatMini("REB", match.rebounds)
+                            StatMini("AST", match.assists)
+                            StatMini("STL", match.steals)
+                            StatMini("BLK", match.blocks)
+                            StatMini("TO", match.turnovers)
+                        }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showQuarterScores = false }) {
+                TextButton(onClick = { showMatchDetails = false }) {
                     Text("Close", color = OrangePrimary)
                 }
             }
@@ -264,10 +310,10 @@ fun MatchCard(match: Match, onClick: () -> Unit, onDelete: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
-                        onClick = { showQuarterScores = true },
+                        onClick = { showMatchDetails = true },
                         modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Default.Info, contentDescription = "Quarter Scores", tint = OrangePrimary, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Info, contentDescription = "Match Details", tint = OrangePrimary, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -298,5 +344,13 @@ fun StatShort(label: String, value: Int) {
     Column {
         Text(label, color = TextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         Text(value.toString(), color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.Black)
+    }
+}
+
+@Composable
+fun StatMini(label: String, value: Int) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, color = TextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Text(value.toString(), color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Black)
     }
 }
